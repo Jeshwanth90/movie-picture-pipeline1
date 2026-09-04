@@ -17,7 +17,11 @@ RUN apk update && \
 RUN mkdir -p /var/www/app && mkdir /app
 
 COPY Pipfile* /app
+
+# Allow uwsgi compilation with modern GCC
+ENV CFLAGS="-Wno-error=incompatible-pointer-types"
 RUN cd /app && (pipenv install --system --deploy || pipenv install --system)
+
 COPY . /app
 
-CMD uwsgi --http :5000 --master --enable-threads -s /var/www/app/app.sock --manage-script-name --mount /=app:app
+CMD ["uwsgi", "--http", ":5000", "--master", "--enable-threads", "-s", "/var/www/app/app.sock", "--manage-script-name", "--mount", "/=app:app"]
