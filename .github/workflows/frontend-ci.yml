@@ -1,44 +1,70 @@
-name: Frontend CI/CD
+name: Frontend Continuous Integration
 
 on:
-  push:
-    branches: [ main ]
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  lint:
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: starter/frontend
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: actions/setup-node@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: us-east-1
+          node-version: "18"
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+      - name: Install dependencies
+        run: npm install
 
-      - name: Build, tag, and push image to Amazon ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: movie-picture-frontend
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          cd starter/frontend
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      - name: Run lint
+        run: npm run lint --if-present
 
-      - name: Update kubeconfig for EKS
-        run: |
-          aws eks update-kubeconfig --region us-east-1 --name cluster
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
 
-      - name: Deploy to EKS using Kustomize
-        run: |
-          cd starter/frontend/k8s
-          kustomize edit set image frontend-image=${{ steps.login-ecr.outputs.registry }}/movie-picture-frontend:${{ github.sha }}
-          kubectl apply -k .
+    defaults:
+      run:
+        working-directory: starter/frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test -- --watchAll=false
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+
+    defaults:
+      run:
+        working-directory: starter/frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build frontend
+        run: npm run build
