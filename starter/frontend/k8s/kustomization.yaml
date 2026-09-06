@@ -4,3 +4,11 @@ resources:
   - service.yaml
   - deployment.yaml
 namespace: default
+
+images:
+  - name: frontend
+    newName: 509692709711.dkr.ecr.us-east-1.amazonaws.com/movie-picture-frontend
+    newTag: 715fccbfa5d684be88cd414cd8caa077b02d5b1e
+  - name: backend
+    newName: 509692709711.dkr.ecr.us-east-1.amazonaws.com/movie-picture-backend
+    newTag: 715fccbfa5d684be88cd414cd8caa077b02d5b1e
