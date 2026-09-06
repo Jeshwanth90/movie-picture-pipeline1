@@ -1,26 +1,21 @@
 FROM public.ecr.aws/docker/library/python:3.10-alpine
-ENV FLASK_RUN_HOST=0.0.0.0
 
-WORKDIR /
-RUN adduser -u 1000 -D app
-RUN apk update && \
-  apk add \
-  pcre \
-  pcre-dev \
-  build-base \
-  gcc \
-  linux-headers \
-  openssl \
-  libffi-dev \
-  && pip install pipenv
+WORKDIR /app
 
-RUN mkdir -p /var/www/app && mkdir /app
+RUN apk update && apk add --no-cache \
+    build-base \
+    gcc \
+    linux-headers \
+    libffi-dev
 
-COPY Pipfile* /app/
-
-ENV CFLAGS="-Wno-error=incompatible-pointer-types"
-RUN cd /app && (pipenv install --system --deploy || pipenv install --system)
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /app
 
-CMD ["uwsgi", "--http", ":5000", "--master", "--enable-threads", "-s", "/var/www/app/app.sock", "--manage-script-name", "--mount", "/=app:app"]
+EXPOSE 5000
+
+ENV FLASK_APP=app.py
+ENV FLASK_RUN_HOST=0.0.0.0
+
+CMD ["python3", "-m", "flask", "run", "--port=5000"]
