@@ -1,10 +1,7 @@
-cat << 'EOF' > starter/backend/k8s/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend
-  labels:
-    app: backend
 spec:
   replicas: 1
   selector:
@@ -17,7 +14,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: 509692709711.dkr.ecr.us-east-1.amazonaws.com/movie-picture-backend:715fccbfa5d684be88cd414cd8caa077b02d5b1e
+          image: backend-image
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
-EOF
